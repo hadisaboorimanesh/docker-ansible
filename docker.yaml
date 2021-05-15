@@ -1,0 +1,55 @@
+---
+
+  - hosts: docker
+    become: true
+   
+    vars:
+      pakage_for_preinstall:
+        - apt-transport-https
+        - ca-certificates
+        - curl  
+        - gnupg 
+        - lsb-release
+      pakage_for_instal_docker:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+   
+    tasks:
+      
+     - name: check docker
+       shell : "which docker" 
+       register: result
+       ignore_errors: true
+    
+     - name: print dokcer state 
+       debug:
+         msg: docker is installed  on "{{ inventory_hostname }}"
+       when: result.rc == 0 
+      
+     - meta: end_play
+       when: result.rc == 0
+
+     - name: install pre install
+       apt:
+         name: "{{ pakage_for_preinstall }}" 
+         state: present
+       when: result.rc == 1 
+      
+     - name: Add Docker GPG apt Key
+       apt_key:
+         url: https://download.docker.com/linux/ubuntu/gpg
+         state: present
+       when: result.rc == 1
+
+     - name: Add Docker Repository
+       apt_repository:
+         repo: deb https://download.docker.com/linux/ubuntu bionic stable
+         state: present
+       when: result.rc == 1
+
+     - name: Update apt and install docker-ce
+       apt: 
+         name: "{{ pakage_for_instal_docker }}" 
+         state: latest
+       when: result.rc == 1
